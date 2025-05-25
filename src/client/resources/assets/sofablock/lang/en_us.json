@@ -1,0 +1,27 @@
+{
+  "config.sofablock.title": "Sofablock config",
+
+  "config.sofablock.border.name": "Borders",
+  "config.sofablock.border.tooltip": "Borders rendered in certain areas",
+
+  "config.sofablock.areas.name": "Areas",
+  "config.sofablock.areas.description": "Areas where borders are enabled",
+
+  "config.sofablock.area.crystal_hollows.name": "Crystal Hollows",
+  "config.sofablock.area.crystal_hollows.description": "Whether to render borders in Crystal Hollows",
+
+  "config.sofablock.options.name": "Border options",
+  "config.sofablock.options.description": "Options for rendering borders",
+
+  "config.sofablock.color.name": "Border color",
+  "config.sofablock.color.description": "Color of the border",
+
+  "config.sofablock.fade_start.name": "Fade start",
+  "config.sofablock.fade_start.description": "Distance for the border to start fading",
+  "config.sofablock.fade_end.name": "Fade end",
+  "config.sofablock.fade_end.description": "Maximum distance for the border to appear",
+
+  "config.sofablock.plane_size.name": "Border size",
+  "config.sofablock.plane_size.description": "Maximum size of border, i.e distance from two edges of the border",
+  "config.sofablock.blocks_value": "%f blocks"
+}

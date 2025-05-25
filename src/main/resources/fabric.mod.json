@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "sofablock",
+  "version": "${mod_version}",
+  "name": "Sofablock",
+  "description": "Hypixel SkyBlock mod",
+  "authors": [
+    "sophur"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/mekb-turtle/Sofablock"
+  },
+  "license": "MPL-2.0",
+  "icon": "assets/sofablock/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "me.sophur.sofablock.SofablockClient"
+    ],
+    "modmenu": [
+      "me.sophur.sofablock.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "sofablock.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "${fabric_api_version}",
+    "yet_another_config_lib_v3": "${yacl_version}"
+  },
+  "suggests": {
+  }
+}
