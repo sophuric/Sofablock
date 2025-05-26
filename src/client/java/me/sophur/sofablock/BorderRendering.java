@@ -39,10 +39,11 @@ public class BorderRendering {
     public static void buildVertices(BufferBuilder bufferBuilder, Vector3f cameraPos) {
         var config = Config.HANDLER.instance();
         if (config.crystalHollowsEnabled && SofablockClient.inCrystalHollows()) {
-            buildRectangle(bufferBuilder, cameraPos, 512.5f, -500f, 562.0f, 512.5f, 500f, 924.0f);
-            buildRectangle(bufferBuilder, cameraPos, 560.0f, -500f, 513.0f, 824.0f, 500f, 513.0f);
-            buildRectangle(bufferBuilder, cameraPos, 513.0f, -500f, 460.0f, 513.0f, 500f, 202.0f);
-            buildRectangle(bufferBuilder, cameraPos, 463.0f, -500f, 513.0f, 202.0f, 500f, 513.0f);
+            buildRectangle(bufferBuilder, cameraPos, 512.5f, 64.5f, 562.0f, 512.5f, 189.0f, 824.0f); // goblin holdout / precursor remnants
+            buildRectangle(bufferBuilder, cameraPos, 560.0f, 64.5f, 513.0f, 824.0f, 189.0f, 513.0f); // mithril deposits / precursor remnants
+            buildRectangle(bufferBuilder, cameraPos, 513.0f, 64.5f, 460.0f, 513.0f, 189.0f, 202.0f); // mithril deposits / jungle
+            buildRectangle(bufferBuilder, cameraPos, 463.0f, 64.5f, 513.0f, 202.0f, 189.0f, 513.0f); // goblin holdout / jungle
+            buildRectangle(bufferBuilder, cameraPos, 202.0f, 64.5f, 202.0f, 824.0f, 64.5f, 824.0f); // magma fields / upper
         }
     }
 
