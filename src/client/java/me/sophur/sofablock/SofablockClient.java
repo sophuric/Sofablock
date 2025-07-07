@@ -1,7 +1,5 @@
 package me.sophur.sofablock;
 
-import dev.isxander.yacl3.api.*;
-import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.azureaaron.hmapi.events.HypixelPacketEvents;
 import net.azureaaron.hmapi.network.HypixelNetworking;
@@ -9,11 +7,16 @@ import net.azureaaron.hmapi.network.packet.s2c.ErrorS2CPacket;
 import net.azureaaron.hmapi.network.packet.s2c.HypixelS2CPacket;
 import net.azureaaron.hmapi.network.packet.v1.s2c.LocationUpdateS2CPacket;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.text.Text;
+import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 public class SofablockClient implements ClientModInitializer {
     public static final String MOD_ID = "sofablock";
@@ -21,8 +24,12 @@ public class SofablockClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        if (!Config.HANDLER.load()) throw new RuntimeException("Failed to load config");
-
+        resetLocation();
+        try {
+            Config.INSTANCE.load();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         HypixelPacketEvents.LOCATION_UPDATE.register(SofablockClient::handlePacket);
         HypixelNetworking.registerToEvents(Util.make(new Object2IntOpenHashMap<>(), map -> {
             map.put(LocationUpdateS2CPacket.ID, 1);
@@ -33,6 +40,17 @@ public class SofablockClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             resetLocation();
         });
+        HudLayerRegistrationCallback.EVENT.register(t -> {
+            t.addLayer(PowderDisplay.INSTANCE);
+        });
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            try {
+                Config.INSTANCE.save();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+        ClientTickEvents.END_CLIENT_TICK.register(HOTMParser::handleTick);
     }
 
     private static String serverName;
@@ -84,9 +102,5 @@ public class SofablockClient implements ClientModInitializer {
 
     public static boolean onSkyblock() {
         return serverType.equals("SKYBLOCK");
-    }
-
-    public static boolean inCrystalHollows() {
-        return onSkyblock() && mode.equals("crystal_hollows");
     }
 }

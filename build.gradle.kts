@@ -49,7 +49,6 @@ dependencies {
     modImplementation(libs.fabric.loader)
     modImplementation(libs.fabric.api)
     modImplementation(libs.hm.api)
-    modImplementation(libs.yacl)
     modImplementation(libs.modmenu)
 }
 
@@ -60,7 +59,6 @@ tasks.processResources {
         "fabric_loader_version" to libs.versions.fabric.loader.get(),
         "fabric_api_version" to libs.versions.fabric.api.get(),
         "minecraft_version" to libs.versions.minecraft.get(),
-        "yacl_version" to libs.versions.yacl.get()
     )
 
     inputs.properties(map)

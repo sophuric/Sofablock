@@ -1,17 +1,17 @@
 [versions]
-fabric_loom = "1.10-SNAPSHOT"
-
-minecraft = "1.21.4"
-yarn = "1.21.4+build.8"
+minecraft = "1.21.5"
+yarn = "1.21.5+build.1"
 
 fabric_loader = "0.16.14"
-fabric_api = "0.119.2+1.21.4"
+fabric_loom = "1.10-SNAPSHOT"
+
+fabric_api = "0.127.1+1.21.5"
 
 hm_api = "1.0.1+1.21.2"
 
-yacl = "3.6.6+1.21.4-fabric"
-
 modmenu = "13.0.3"
+
+jackson_core = "2.19.1"
 
 [plugins]
 fabric_loom = { id = "fabric-loom", version.ref = "fabric_loom" }
@@ -24,7 +24,5 @@ fabric_loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = 
 fabric_api = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabric_api" }
 
 hm_api = { group = "net.azureaaron", name = "hm-api", version.ref = "hm_api" }
-
-yacl = { group = "dev.isxander", name = "yet-another-config-lib", version.ref = "yacl" }
 
 modmenu = { group = "com.terraformersmc", name = "modmenu", version.ref = "modmenu" }

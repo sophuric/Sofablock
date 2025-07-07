@@ -3,7 +3,6 @@
   "package": "me.sophur.sofablock.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "WorldBorderRenderingMixin"
   ],
   "injectors": {
     "defaultRequire": 1
