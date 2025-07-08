@@ -3,16 +3,15 @@ package me.sophur.sofablock;
 import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.hud.PlayerListHud;
 import net.minecraft.client.gui.screen.ChatScreen;
-import net.minecraft.client.gui.tooltip.HoveredTooltipPositioner;
 import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer;
-import net.minecraft.client.render.BackgroundRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import org.joml.Vector2ic;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +29,17 @@ public class PowderDisplay implements IdentifiedLayer {
         return Identifier.of(MOD_ID, "powder_display");
     }
 
+    private static final Field playerListVisible;
+
+    static {
+        try {
+            playerListVisible = PlayerListHud.class.getDeclaredField("visible");
+            playerListVisible.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void render(DrawContext context, RenderTickCounter tickCounter) {
         var client = MinecraftClient.getInstance();
@@ -37,6 +47,14 @@ public class PowderDisplay implements IdentifiedLayer {
         // only show without a screen or in chat
         boolean inScreen = client.currentScreen != null;
         if (!(client.currentScreen instanceof ChatScreen) && inScreen) return;
+        if (client.getDebugHud().shouldShowDebugHud()) return;
+        PlayerListHud playerListHud = client.inGameHud.getPlayerListHud();
+        try {
+            if ((boolean) playerListVisible.get(playerListHud)) {
+                return;
+            }
+        } catch (IllegalAccessException e) {
+        }
 
         int x = 16, y = 16;
         int lineHeight = client.textRenderer.fontHeight;
@@ -45,10 +63,10 @@ public class PowderDisplay implements IdentifiedLayer {
         double mouseX = client.mouse.getScaledX(window), mouseY = client.mouse.getScaledY(window);
 
         int maxWidth = 0;
-        PowderAmount hover = null;
+        PowderType hover = null;
         ArrayList<Text> textLines = new ArrayList<>();
         int ly = y;
-        for (PowderAmount powder : PowderAmount.POWDERS) {
+        for (PowderType powder : PowderType.values()) {
             Text text = powder.getText();
             if (text == null) continue;
             textLines.add(text);
@@ -56,13 +74,17 @@ public class PowderDisplay implements IdentifiedLayer {
             int width = client.textRenderer.getWidth(text);
             if (width > maxWidth) maxWidth = width;
 
-            if (inScreen && mouseX >= x && mouseX < x + width && mouseY >= ly && mouseY <= ly + lineHeight) hover = powder;
+            if (inScreen && mouseX >= x && mouseX < x + width && mouseY >= ly && mouseY <= ly + lineHeight)
+                hover = powder;
 
             ly += lineHeight;
         }
+        
+        var textLineCount = textLines.size();
+        if (textLineCount == 0) return;
 
-        int height = lineHeight * textLines.size();
-        // TooltipBackgroundRenderer.render(context, x, y, maxWidth, height, 0, null);
+        int height = lineHeight * textLineCount;
+        TooltipBackgroundRenderer.render(context, x - 1, y - 1, maxWidth, height, 0, null);
         for (Text text : textLines) {
             context.drawTextWithShadow(client.textRenderer, text, x, y, 0xffffffff);
             y += lineHeight;

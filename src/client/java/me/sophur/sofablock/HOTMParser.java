@@ -8,38 +8,29 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.text.Text;
 
-import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
+
+import static me.sophur.sofablock.Util.getSlotByName;
+import static me.sophur.sofablock.Util.matchTexts;
 
 public class HOTMParser {
     private HOTMParser() {
     }
 
     public enum HeartType {
-        HOTM("Heart of the Mountain", Stream.of("mithril", "gemstone", "glacite").map(PowderAmount::getPowder).toList()),
-        HOTF("Heart of the Forest", List.of(PowderAmount.getPowder("forest")));
+        HOTM("Heart of the Mountain", List.of(PowderType.MITHRIL, PowderType.GEMSTONE, PowderType.GLACITE)),
+        HOTF("Heart of the Forest", List.of(PowderType.WHISPERS));
 
-        HeartType(String name, List<PowderAmount> powders) {
+        HeartType(String name, List<PowderType> powders) {
             this.name = name;
             this.powders = powders;
         }
 
         public final String name;
-        public final List<PowderAmount> powders;
-    }
-
-    private static Optional<Slot> getSlotByName(AbstractList<Slot> slots, String name) {
-        return slots.stream().filter(slot -> slot.getStack().getName().getString().equals(name)).findFirst();
-    }
-
-    private static Matcher matchTexts(List<Text> texts, String pattern) {
-        Pattern regex = Pattern.compile(pattern);
-        return texts.stream().map(text -> regex.matcher(text.getString())).filter(Matcher::find).findFirst().orElse(null);
+        public final List<PowderType> powders;
     }
 
     public static void handleTick(MinecraftClient client) {
@@ -59,23 +50,13 @@ public class HOTMParser {
             if (heartLore == null) return;
             LoreComponent resetLore = resetItem.get().getStack().get(DataComponentTypes.LORE);
             if (resetLore == null) return;
-            for (PowderAmount powder : type.powders) {
-                powder.current().set(0);
-                powder.spent().set(0);
-                Matcher currentPowderMatch = matchTexts(heartLore.lines(), "^" + powder.name() + ": ([0-9,]+)$");
-                Matcher spentPowderMatch = matchTexts(resetLore.lines(), "^ *- *([0-9,]+) " + powder.name() + "$");
-                if (currentPowderMatch != null) {
-                    try {
-                        powder.current().set(Integer.parseInt(currentPowderMatch.group(1).replaceAll(",", "")));
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-                if (spentPowderMatch != null) {
-                    try {
-                        powder.spent().set(Integer.parseInt(spentPowderMatch.group(1).replaceAll(",", "")));
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
+            for (PowderType powder : type.powders) {
+                powder.current.set(0);
+                powder.spent.set(0);
+                Matcher currentPowderMatch = matchTexts(heartLore.lines(), "^" + powder.displayName + ": ([0-9,]+)$");
+                Matcher spentPowderMatch = matchTexts(resetLore.lines(), "^ *- *([0-9,]+) " + powder.displayName + "$");
+                if (currentPowderMatch != null) Util.setAmountFromString(currentPowderMatch.group(1), powder.current, powder);
+                if (spentPowderMatch != null) Util.setAmountFromString(spentPowderMatch.group(1), powder.spent, powder);
             }
         }
     }

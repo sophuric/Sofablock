@@ -51,6 +51,7 @@ public class SofablockClient implements ClientModInitializer {
             }
         });
         ClientTickEvents.END_CLIENT_TICK.register(HOTMParser::handleTick);
+        ClientTickEvents.END_CLIENT_TICK.register(TabParser::handleTick);
     }
 
     private static String serverName;

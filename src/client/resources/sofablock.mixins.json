@@ -1,10 +1,10 @@
 {
-  "required": true,
-  "package": "me.sophur.sofablock.mixin",
-  "compatibilityLevel": "JAVA_21",
-  "client": [
-  ],
-  "injectors": {
-    "defaultRequire": 1
-  }
+    "required": true,
+    "package": "me.sophur.sofablock.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "client": [
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
 }
