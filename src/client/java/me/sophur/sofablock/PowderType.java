@@ -94,8 +94,7 @@ public enum PowderType {
         appendMaxText(text.append(Text.literal(" / ").formatted(GRAY)), total, hypermax, GRAY);
         int gained = rate.getAmountGained();
         if (gained > 0)
-            text.append(literal(" - " + gained + "/min", GRAY)
-                .append(literal(" - " + Util.formatDuration(rate.calculateETA(hypermax)) + " ETA", GRAY)));
+            text.append(literal(" - " + gained + "/min", GRAY));
 
         return text;
     }
@@ -117,10 +116,6 @@ public enum PowderType {
         texts.add(Text.empty());
         texts.add(literal("In last minute: ", GRAY)
             .append(literal(decimalFormat.format(rate.getAmountGained()), WHITE)));
-        texts.add(literal("ETA to max (XP): ", GRAY)
-            .append(formatDurationText(rate.calculateETA(xpMax))));
-        texts.add(literal("ETA to hypermax: ", GRAY)
-            .append(formatDurationText(rate.calculateETA(hypermax))));
 
         return texts;
     }

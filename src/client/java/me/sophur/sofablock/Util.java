@@ -65,49 +65,4 @@ public class Util {
     public static MutableText literal(String string, Formatting formatting) {
         return Text.literal(string).formatted(formatting);
     }
-
-    public static long calculateETA(int current, int destination, int gained, long period) {
-        if (gained == 0) return -1;
-        // current + gained * time/period = destination;
-        return (destination - current) * period / gained;
-    }
-
-    public static MutableText formatDurationText(long nano) {
-        if (nano < 0) return literal("N/A", RED);
-
-        MutableText text = Text.empty();
-
-        double seconds = (nano / 1_000_000) / 1000d;
-        String c = "s";
-        if (seconds >= 60) {
-            seconds /= 60;
-            c = "m";
-            if (seconds >= 60) {
-                seconds /= 60;
-                c = "h";
-                if (seconds >= 24) {
-                    seconds /= 24;
-                    c = "d";
-                    if (seconds >= 7) {
-                        seconds /= 7;
-                        c = "w";
-                    }
-                }
-            }
-        }
-        return text.append(literal(toStringRound(seconds, 2), WHITE)).append(literal(c, GRAY));
-    }
-
-    public static String toStringRound(double number, int digits) {
-        double multiplier = 1;
-        for (int i = 0; i < digits; ++i) multiplier *= 10;
-        number *= multiplier;
-        number = Math.round(number);
-        number /= multiplier;
-        return Double.toString(number);
-    }
-
-    public static String formatDuration(long nano) {
-        return formatDurationText(nano).getString();
-    }
 }

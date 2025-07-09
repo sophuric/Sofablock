@@ -59,8 +59,4 @@ public class RateMeasurer {
         if (timestamps.isEmpty()) return 0;
         return timestamps.getLast().powder - timestamps.getFirst().powder;
     }
-
-    public long calculateETA(int destination) {
-        return me.sophur.sofablock.Util.calculateETA(getter.get(), destination, getAmountGained(), PERIOD);
-    }
 }
