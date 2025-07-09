@@ -11,8 +11,6 @@ hm_api = "1.0.1+1.21.2"
 
 modmenu = "13.0.3"
 
-jackson_core = "2.19.1"
-
 [plugins]
 fabric_loom = { id = "fabric-loom", version.ref = "fabric_loom" }
 

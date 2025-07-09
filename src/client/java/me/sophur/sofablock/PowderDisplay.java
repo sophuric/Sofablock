@@ -1,9 +1,9 @@
 package me.sophur.sofablock;
 
+import me.sophur.sofablock.mixin.PlayerListHudMixin;
 import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.hud.PlayerListHud;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer;
 import net.minecraft.client.render.RenderTickCounter;
@@ -11,7 +11,6 @@ import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,17 +28,6 @@ public class PowderDisplay implements IdentifiedLayer {
         return Identifier.of(MOD_ID, "powder_display");
     }
 
-    private static final Field playerListVisible;
-
-    static {
-        try {
-            playerListVisible = PlayerListHud.class.getDeclaredField("visible");
-            playerListVisible.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     public void render(DrawContext context, RenderTickCounter tickCounter) {
         var client = MinecraftClient.getInstance();
@@ -47,14 +35,9 @@ public class PowderDisplay implements IdentifiedLayer {
         // only show without a screen or in chat
         boolean inScreen = client.currentScreen != null;
         if (!(client.currentScreen instanceof ChatScreen) && inScreen) return;
-        if (client.getDebugHud().shouldShowDebugHud()) return;
-        PlayerListHud playerListHud = client.inGameHud.getPlayerListHud();
-        try {
-            if ((boolean) playerListVisible.get(playerListHud)) {
-                return;
-            }
-        } catch (IllegalAccessException e) {
-        }
+        if (client.getDebugHud().shouldShowDebugHud()) return; // don't show if F3 is open
+        if (((PlayerListHudMixin) client.inGameHud.getPlayerListHud()).getVisible())
+            return; // don't show if tab is open
 
         int x = 16, y = 16;
         int lineHeight = client.textRenderer.fontHeight;
@@ -79,7 +62,7 @@ public class PowderDisplay implements IdentifiedLayer {
 
             ly += lineHeight;
         }
-        
+
         var textLineCount = textLines.size();
         if (textLineCount == 0) return;
 

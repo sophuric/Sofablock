@@ -1,28 +1,16 @@
 package me.sophur.sofablock;
 
+import me.sophur.sofablock.mixin.PlayerListHudMixin;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.PlayerListHud;
 import net.minecraft.client.network.PlayerListEntry;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TabParser {
     private TabParser() {
-    }
-
-    private static final Method collectPlayerEntries;
-
-    static {
-        try {
-            collectPlayerEntries = PlayerListHud.class.getDeclaredMethod("collectPlayerEntries");
-            collectPlayerEntries.setAccessible(true);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static void handleTick(MinecraftClient client) {
@@ -32,12 +20,7 @@ public class TabParser {
         PlayerListHud playerList = client.inGameHud.getPlayerListHud();
         if (playerList == null) return;
 
-        List<PlayerListEntry> tabEntries = null;
-        try {
-            tabEntries = (List<PlayerListEntry>) collectPlayerEntries.invoke(playerList);
-        } catch (IllegalAccessException | InvocationTargetException ignored) {
-            return;
-        }
+        List<PlayerListEntry> tabEntries = ((PlayerListHudMixin)playerList).invokeCollectPlayerEntries();
 
         boolean lastPowder = false;
 
