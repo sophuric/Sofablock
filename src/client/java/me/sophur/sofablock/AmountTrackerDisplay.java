@@ -1,10 +1,8 @@
 package me.sophur.sofablock;
 
-import me.sophur.sofablock.mixin.PlayerListHudMixin;
 import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
@@ -16,12 +14,12 @@ import java.util.List;
 
 import static me.sophur.sofablock.SofablockClient.MOD_ID;
 
-public class PowderDisplay implements IdentifiedLayer {
-    private PowderDisplay() {
+public class AmountTrackerDisplay implements IdentifiedLayer {
+    private AmountTrackerDisplay() {
 
     }
 
-    public final static PowderDisplay INSTANCE = new PowderDisplay();
+    public final static AmountTrackerDisplay INSTANCE = new AmountTrackerDisplay();
 
     @Override
     public Identifier id() {
@@ -30,14 +28,11 @@ public class PowderDisplay implements IdentifiedLayer {
 
     @Override
     public void render(DrawContext context, RenderTickCounter tickCounter) {
-        var client = MinecraftClient.getInstance();
-
         // only show without a screen or in chat
+        if (!SofablockClient.shouldDrawHUD()) return;
+
+        var client = MinecraftClient.getInstance();
         boolean inScreen = client.currentScreen != null;
-        if (!(client.currentScreen instanceof ChatScreen) && inScreen) return;
-        if (client.getDebugHud().shouldShowDebugHud()) return; // don't show if F3 is open
-        if (((PlayerListHudMixin) client.inGameHud.getPlayerListHud()).getVisible())
-            return; // don't show if tab is open
 
         int x = 16, y = 16;
         int lineHeight = client.textRenderer.fontHeight;

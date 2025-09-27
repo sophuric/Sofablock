@@ -19,18 +19,18 @@ public class RateMeasurer {
         return Util.getMeasuringTimeNano();
     }
 
-    public record PowderTimestamp(long timestamp, int powder) {
-        public PowderTimestamp(int powder) {
-            this(getTime(), powder);
+    public record AmountTimestamp(long timestamp, int amount) {
+        public AmountTimestamp(int amount) {
+            this(getTime(), amount);
         }
     }
 
-    private final LinkedList<PowderTimestamp> timestamps = new LinkedList<>();
+    private final LinkedList<AmountTimestamp> timestamps = new LinkedList<>();
 
     public void updateValue() {
         int newValue = getter.get();
-        if (!timestamps.isEmpty() && newValue == timestamps.getLast().powder) return;
-        timestamps.add(new PowderTimestamp(newValue));
+        if (!timestamps.isEmpty() && newValue == timestamps.getLast().amount) return;
+        timestamps.add(new AmountTimestamp(newValue));
         removeOldValues();
     }
 
@@ -38,8 +38,8 @@ public class RateMeasurer {
         long minTime = getTime() - PERIOD;
         int removeUntil = 0;
         for (int i = 0; i < timestamps.size(); i++) {
-            PowderTimestamp timestamp = timestamps.get(i);
-            // store the index of the first powder amount that hasn't expired
+            AmountTimestamp timestamp = timestamps.get(i);
+            // store the index of the first amount that hasn't expired
             if (timestamp.timestamp >= minTime) {
                 removeUntil = i;
                 break;
@@ -48,7 +48,7 @@ public class RateMeasurer {
         --removeUntil;
         if (removeUntil <= 0) return;
         // remove every item before that index, so keep only one expired amount,
-        // so that we can get the powder amount from exactly 60 seconds ago
+        // so that we can get the amount from exactly 60 seconds ago
         for (int i = 0; i < removeUntil; i++) {
             timestamps.removeFirst();
         }
@@ -57,6 +57,6 @@ public class RateMeasurer {
     public int getAmountGained() {
         removeOldValues();
         if (timestamps.isEmpty()) return 0;
-        return timestamps.getLast().powder - timestamps.getFirst().powder;
+        return timestamps.getLast().amount - timestamps.getFirst().amount;
     }
 }

@@ -1,6 +1,7 @@
 package me.sophur.sofablock;
 
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import me.sophur.sofablock.mixin.PlayerListHudMixin;
 import net.azureaaron.hmapi.events.HypixelPacketEvents;
 import net.azureaaron.hmapi.network.HypixelNetworking;
 import net.azureaaron.hmapi.network.packet.s2c.ErrorS2CPacket;
@@ -11,6 +12,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +44,7 @@ public class SofablockClient implements ClientModInitializer {
             resetLocation();
         });
         HudLayerRegistrationCallback.EVENT.register(t -> {
-            t.addLayer(PowderDisplay.INSTANCE);
+            t.addLayer(AmountTrackerDisplay.INSTANCE);
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             try {
@@ -103,5 +106,18 @@ public class SofablockClient implements ClientModInitializer {
 
     public static boolean onSkyblock() {
         return serverType.equals("SKYBLOCK");
+    }
+
+    public static boolean shouldDrawHUD() {
+        var client = MinecraftClient.getInstance();
+        if (!client.isFinishedLoading()) return false;
+        if (client.world == null) return false;
+        if (client.options.hudHidden) return false; // don't show in F1 mode
+        if (client.currentScreen != null && !(client.currentScreen instanceof ChatScreen))
+            return false; // don't show on other GUIs
+        if (client.getDebugHud().shouldShowDebugHud()) return false; // don't show if F3 is open
+        if (((PlayerListHudMixin) client.inGameHud.getPlayerListHud()).getVisible())
+            return false; // don't show if tab is open
+        return true;
     }
 }

@@ -57,7 +57,7 @@ public class Util {
             powder.rate.updateValue();
             return true;
         } catch (NumberFormatException ignored) {
-            SofablockClient.LOGGER.error("Failed to parse powder amount: {}", string);
+            SofablockClient.LOGGER.error("Failed to parse amount: {}", string);
             return false;
         }
     }
