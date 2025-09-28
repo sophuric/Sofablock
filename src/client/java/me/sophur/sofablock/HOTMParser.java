@@ -24,13 +24,13 @@ public class HOTMParser {
         HOTM("Heart of the Mountain", List.of(PowderType.MITHRIL, PowderType.GEMSTONE, PowderType.GLACITE)),
         HOTF("Heart of the Forest", List.of(PowderType.WHISPERS));
 
-        HeartType(String name, List<PowderType> powders) {
+        HeartType(String name, List<PowderType> amountTypes) {
             this.name = name;
-            this.powders = powders;
+            this.amountTypes = amountTypes;
         }
 
         public final String name;
-        public final List<PowderType> powders;
+        public final List<PowderType> amountTypes;
     }
 
     public static void handleTick(MinecraftClient client) {
@@ -50,13 +50,20 @@ public class HOTMParser {
             if (heartLore == null) return;
             LoreComponent resetLore = resetItem.get().getStack().get(DataComponentTypes.LORE);
             if (resetLore == null) return;
-            for (PowderType powder : type.powders) {
-                powder.current.set(0);
-                powder.spent.set(0);
-                Matcher currentPowderMatch = matchTexts(heartLore.lines(), "^" + powder.displayName + ": ([0-9,]+)$");
-                Matcher spentPowderMatch = matchTexts(resetLore.lines(), "^ *- *([0-9,]+) " + powder.displayName + "$");
-                if (currentPowderMatch != null) Util.setAmountFromString(currentPowderMatch.group(1), powder.current, powder);
-                if (spentPowderMatch != null) Util.setAmountFromString(spentPowderMatch.group(1), powder.spent, powder);
+            for (PowderType powderType : PowderType.values()) {
+                Matcher currentPowderMatch = matchTexts(heartLore.lines(), "^" + powderType.displayName + ": ([0-9,]+)$");
+                Matcher spentPowderMatch = matchTexts(resetLore.lines(), "^ *- *([0-9,]+) " + powderType.displayName + "$");
+                var amount = Config.INSTANCE.powders.get(powderType);
+                try {
+                    if (currentPowderMatch != null) amount.current = Util.parseAmount(currentPowderMatch.group(1));
+                } catch (NumberFormatException e) {
+                    SofablockClient.LOGGER.error("Failed to parse current powder for {}", powderType.displayName, e);
+                }
+                try {
+                    if (spentPowderMatch != null) amount.spent = Util.parseAmount(spentPowderMatch.group(1));
+                } catch (NumberFormatException e) {
+                    SofablockClient.LOGGER.error("Failed to parse spent powder for {}", powderType.displayName, e);
+                }
             }
         }
     }

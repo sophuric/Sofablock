@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class RateMeasurer {
-    private final Supplier<Integer> getter;
+    private transient final Supplier<Integer> getter;
 
     public RateMeasurer(Supplier<Integer> getter) {
         this.getter = getter;

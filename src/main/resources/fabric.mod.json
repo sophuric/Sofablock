@@ -8,7 +8,6 @@
         "sophur"
     ],
     "contact": {
-        "homepage": "https://fabricmc.net/",
         "sources": "https://github.com/sophuric/Sofablock"
     },
     "license": "MPL-2.0",
@@ -17,6 +16,9 @@
     "entrypoints": {
         "client": [
             "me.sophur.sofablock.SofablockClient"
+        ],
+        "modmenu": [
+            "me.sophur.sofablock.ModMenuIntegration"
         ]
     },
     "mixins": [

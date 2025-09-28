@@ -1,50 +1,54 @@
 package me.sophur.sofablock;
 
+import me.sophur.sofablock.AmountValue.AmountGoalValue;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.util.Util;
 import org.spongepowered.include.com.google.gson.Gson;
+import org.spongepowered.include.com.google.gson.GsonBuilder;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import static me.sophur.sofablock.SofablockClient.MOD_ID;
 
 public class Config {
+    public static Config INSTANCE = new Config();
+
     private Config() {
     }
 
-    private Config(Config config) {
-        set(config);
+    public Map<PowderType, AmountValue> powders = new HashMap<>();
+
+    {
+        for (PowderType powderType : PowderType.values()) {
+            powders.put(powderType, new AmountValue());
+        }
     }
 
-    public int
-        currentMithrilPowder, spentMithrilPowder,
-        currentGemstonePowder, spentGemstonePowder,
-        currentGlacitePowder, spentGlacitePowder,
-        currentForestWhispers, spentForestWhispers;
+    public Map<ItemType, AmountGoalValue> items = new HashMap<>();
 
-    private void set(Config config) {
-        currentMithrilPowder = config.currentMithrilPowder;
-        spentMithrilPowder = config.spentMithrilPowder;
-        currentGemstonePowder = config.currentGemstonePowder;
-        spentGemstonePowder = config.spentGemstonePowder;
-        currentGlacitePowder = config.currentGlacitePowder;
-        spentGlacitePowder = config.spentGlacitePowder;
-        currentForestWhispers = config.currentForestWhispers;
-        spentForestWhispers = config.spentForestWhispers;
+    {
+        for (ItemType itemType : ItemType.values()) {
+            items.put(itemType, new AmountGoalValue());
+        }
     }
 
-    public static Config INSTANCE = new Config();
-
-    private transient final Gson gson = new Gson();
-
-    private File getConfigFile() {
-        return FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json5").toFile();
+    public static void openConfigFile() {
+        Util.getOperatingSystem().open(getConfigFile());
     }
 
-    public boolean load() throws IOException {
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    private static File getConfigFile() {
+        return FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".json").toFile();
+    }
+
+    public static boolean load() throws IOException {
         try {
             try (FileReader fileReader = new FileReader(getConfigFile(), StandardCharsets.UTF_8)) {
-                set(gson.fromJson(fileReader, Config.class));
+                INSTANCE = gson.fromJson(fileReader, Config.class);
             }
             return true;
         } catch (FileNotFoundException ignored) {
@@ -52,9 +56,9 @@ public class Config {
         }
     }
 
-    public void save() throws IOException {
+    public static void save() throws IOException {
         try (FileWriter fileWriter = new FileWriter(getConfigFile(), StandardCharsets.UTF_8)) {
-            gson.toJson(this, Config.class, fileWriter);
+            gson.toJson(INSTANCE, Config.class, fileWriter);
         }
     }
 }

@@ -29,7 +29,7 @@ public class SofablockClient implements ClientModInitializer {
     public void onInitializeClient() {
         resetLocation();
         try {
-            Config.INSTANCE.load();
+            Config.load();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -44,11 +44,11 @@ public class SofablockClient implements ClientModInitializer {
             resetLocation();
         });
         HudLayerRegistrationCallback.EVENT.register(t -> {
-            t.addLayer(AmountTrackerDisplay.INSTANCE);
+            t.addLayer(SofablockHUD.INSTANCE);
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             try {
-                Config.INSTANCE.save();
+                Config.save();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
