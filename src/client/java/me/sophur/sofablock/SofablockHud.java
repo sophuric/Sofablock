@@ -9,19 +9,17 @@ import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
-import net.minecraft.util.math.Position;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static me.sophur.sofablock.SofablockClient.MOD_ID;
 
-public class SofablockHUD implements IdentifiedLayer {
-    private SofablockHUD() {
+public class SofablockHud implements IdentifiedLayer {
+    private SofablockHud() {
 
     }
 
-    public final static SofablockHUD INSTANCE = new SofablockHUD();
+    public final static SofablockHud INSTANCE = new SofablockHud();
 
     @Override
     public Identifier id() {
@@ -31,9 +29,9 @@ public class SofablockHUD implements IdentifiedLayer {
     public interface TextDisplay {
         List<Pair<Text, List<Text>>> GetTextLines();
 
-        int GetX();
+        int GetX(int width);
 
-        int GetY();
+        int GetY(int height);
     }
 
     private final List<TextDisplay> text = List.of(
@@ -48,16 +46,16 @@ public class SofablockHUD implements IdentifiedLayer {
         var client = MinecraftClient.getInstance();
         boolean inScreen = client.currentScreen != null;
 
-        int x = 16, y = 16;
         int lineHeight = client.textRenderer.fontHeight;
 
         Window window = client.getWindow();
         double mouseX = client.mouse.getScaledX(window), mouseY = client.mouse.getScaledY(window);
 
-
         List<Text> hoverText = null;
 
         for (TextDisplay textDisplay : text) {
+            int x = textDisplay.GetX(window.getWidth()), y = textDisplay.GetY(window.getHeight());
+            
             int maxWidth = 0;
 
             var textLines = textDisplay.GetTextLines();

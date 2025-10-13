@@ -1,5 +1,8 @@
-package me.sophur.sofablock;
+package me.sophur.sofablock.tracker;
 
+import me.sophur.sofablock.ItemStorage;
+import me.sophur.sofablock.SofablockClient;
+import me.sophur.sofablock.Util;
 import me.sophur.sofablock.mixin.PlayerListHudMixin;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.PlayerListHud;
@@ -12,7 +15,7 @@ import java.util.regex.Pattern;
 public class TabParser {
     private TabParser() {
     }
-
+    
     public static void handleTick(MinecraftClient client) {
         if (!SofablockClient.onSkyblock()) return;
         if (client.player == null) return;
@@ -35,12 +38,12 @@ public class TabParser {
             }
             if (lastPowder) {
                 boolean foundPowder = false;
-                for (PowderType powderType : HOTMParser.HeartType.HOTM.amountTypes) {
+                for (PowderType powderType : HotmGuiParser.HeartType.HOTM.amountTypes) {
                     Matcher matcher = Pattern.compile("^ " + powderType.tabName + ": ([0-9,]+)$").matcher(nameString);
                     if (!matcher.find()) continue;
                     foundPowder = true;
                     try {
-                        Config.INSTANCE.powders.get(powderType).current = Util.parseAmount(matcher.group(1));
+                        ItemStorage.INSTANCE.powders.get(powderType).current = Util.parseAmount(matcher.group(1));
                     } catch (NumberFormatException e) {
                         SofablockClient.LOGGER.error("Failed to parse current powder for {}", powderType.displayName, e);
                     }

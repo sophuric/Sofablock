@@ -1,19 +1,16 @@
-package me.sophur.sofablock;
+package me.sophur.sofablock.tracker;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import com.mojang.serialization.Codec;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.StringIdentifiable;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
 
-import static me.sophur.sofablock.Util.*;
 import static net.minecraft.util.Formatting.*;
 
-public enum PowderType {
+public enum PowderType implements StringIdentifiable {
     MITHRIL("Mithril", "Mithril Powder", List.of("mining_3", "crystal_hollows"/*, "mineshaft"*/), DARK_GREEN,
             12_500_000, 12_658_220),
     GEMSTONE("Gemstone", "Gemstone Powder", MITHRIL.areas, LIGHT_PURPLE,
@@ -22,6 +19,8 @@ public enum PowderType {
             20_000_000, 34_479_533),
     WHISPERS("Whispers", "Forest Whispers", List.of("foraging_1", "foraging_2"), DARK_AQUA,
             1, 1);
+
+    public static final Codec<PowderType> CODEC = StringIdentifiable.createCodec(PowderType::values);
 
     public final String tabName;
     public final String displayName;
@@ -39,4 +38,8 @@ public enum PowderType {
         this.hypermax = hypermax;
     }
 
+    @Override
+    public String asString() {
+        return name();
+    }
 }

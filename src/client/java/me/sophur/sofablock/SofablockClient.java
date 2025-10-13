@@ -2,6 +2,7 @@ package me.sophur.sofablock;
 
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import me.sophur.sofablock.mixin.PlayerListHudMixin;
+import me.sophur.sofablock.tracker.*;
 import net.azureaaron.hmapi.events.HypixelPacketEvents;
 import net.azureaaron.hmapi.network.HypixelNetworking;
 import net.azureaaron.hmapi.network.packet.s2c.ErrorS2CPacket;
@@ -10,8 +11,10 @@ import net.azureaaron.hmapi.network.packet.v1.s2c.LocationUpdateS2CPacket;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.util.Util;
@@ -20,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 
 public class SofablockClient implements ClientModInitializer {
     public static final String MOD_ID = "sofablock";
@@ -29,7 +33,7 @@ public class SofablockClient implements ClientModInitializer {
     public void onInitializeClient() {
         resetLocation();
         try {
-            Config.load();
+            ItemStorage.load();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -44,17 +48,27 @@ public class SofablockClient implements ClientModInitializer {
             resetLocation();
         });
         HudLayerRegistrationCallback.EVENT.register(t -> {
-            t.addLayer(SofablockHUD.INSTANCE);
+            t.addLayer(SofablockHud.INSTANCE);
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             try {
-                Config.save();
+                ItemStorage.save();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         });
-        ClientTickEvents.END_CLIENT_TICK.register(HOTMParser::handleTick);
+        ClientTickEvents.END_CLIENT_TICK.register(HotmGuiParser::handleTick);
         ClientTickEvents.END_CLIENT_TICK.register(TabParser::handleTick);
+        ClientTickEvents.END_CLIENT_TICK.register(SackGuiParser::handleTick);
+        ClientTickEvents.END_CLIENT_TICK.register(InventoryItemCounter::handleTick);
+        ClientReceiveMessageEvents.ALLOW_GAME.register(SackPickupChatParser::handleGame);
+    }
+    
+    public static Path getModDirectory() throws RuntimeException {
+        var directory = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
+        //noinspection ResultOfMethodCallIgnored
+        directory.toFile().mkdirs();
+        return directory;
     }
 
     private static String serverName;

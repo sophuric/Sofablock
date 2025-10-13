@@ -2,7 +2,6 @@ package me.sophur.sofablock;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
-import net.minecraft.util.Util;
 
 import java.io.IOException;
 
@@ -11,12 +10,12 @@ public class ModMenuIntegration implements ModMenuApi {
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
         return screen -> {
             try {
-                Config.save();
+                ItemStorage.save();
             } catch (IOException e) {
                 SofablockClient.LOGGER.error("Failed to save config", e);
                 return null;
             }
-            Config.openConfigFile();
+            ItemStorage.openConfigFile();
             return null;
         };
     }

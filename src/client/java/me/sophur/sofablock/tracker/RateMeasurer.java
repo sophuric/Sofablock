@@ -1,4 +1,4 @@
-package me.sophur.sofablock;
+package me.sophur.sofablock.tracker;
 
 import net.minecraft.util.Util;
 

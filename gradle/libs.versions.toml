@@ -11,6 +11,8 @@ hm_api = "1.0.1+1.21.2"
 
 modmenu = "13.0.3"
 
+skyblocker = "5.4.0"
+
 [plugins]
 fabric_loom = { id = "fabric-loom", version.ref = "fabric_loom" }
 
