@@ -1,6 +1,9 @@
 package me.sophur.sofablock;
 
-import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer;
@@ -14,17 +17,11 @@ import java.util.List;
 
 import static me.sophur.sofablock.SofablockClient.MOD_ID;
 
-public class SofablockHud implements IdentifiedLayer {
+public class SofablockHud {
     private SofablockHud() {
-
     }
 
-    public final static SofablockHud INSTANCE = new SofablockHud();
-
-    @Override
-    public Identifier id() {
-        return Identifier.of(MOD_ID, "hud");
-    }
+    private final static SofablockHud INSTANCE = new SofablockHud();
 
     public interface TextDisplay {
         List<Pair<Text, List<Text>>> GetTextLines();
@@ -34,12 +31,11 @@ public class SofablockHud implements IdentifiedLayer {
         int GetY(int height);
     }
 
-    private final List<TextDisplay> text = List.of(
+    private static final List<TextDisplay> text = List.of(
         new me.sophur.sofablock.hud.AmountDisplay()
     );
 
-    @Override
-    public void render(DrawContext context, RenderTickCounter tickCounter) {
+    public static void render(DrawContext context, RenderTickCounter tickCounter) {
         // only show without a screen or in chat
         if (!SofablockClient.shouldDrawHUD()) return;
 
@@ -72,7 +68,7 @@ public class SofablockHud implements IdentifiedLayer {
             }
 
             int height = lineHeight * textLines.size();
-            TooltipBackgroundRenderer.render(context, x - 1, y - 1, maxWidth, height, 0, null);
+            TooltipBackgroundRenderer.render(context, x - 1, y - 1, maxWidth, height, null);
             for (Pair<Text, List<Text>> text : textLines) {
                 context.drawTextWithShadow(client.textRenderer, text.getLeft(), x, y, 0xffffffff);
                 y += lineHeight;
