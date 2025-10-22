@@ -69,6 +69,8 @@ public class AmountDisplay implements TextDisplay {
     }
 
     public List<Pair<Text, List<Text>>> GetTextLines() {
+        if (!SofablockClient.onSkyblock()) return null;
+
         ArrayList<Pair<Text, List<Text>>> textLines = new ArrayList<>();
 
         for (PowderType powderType : PowderType.values()) {

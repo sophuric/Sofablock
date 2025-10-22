@@ -48,7 +48,7 @@ public class SofablockHud {
             int maxWidth = 0;
 
             var textLines = textDisplay.GetTextLines();
-            if (textLines.isEmpty()) continue;
+            if (textLines == null || textLines.isEmpty()) continue;
 
             int ly = y;
             for (Pair<Text, List<Text>> line : textLines) {
