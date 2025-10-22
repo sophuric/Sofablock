@@ -1,10 +1,10 @@
-package me.sophur.sofablock;
+package me.sophur.sofablock.itemdata;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
-public class GemstoneUtil {
-    private GemstoneUtil() {
+public class Gemstone {
+    private Gemstone() {
     }
 
     public enum GemstoneTier {

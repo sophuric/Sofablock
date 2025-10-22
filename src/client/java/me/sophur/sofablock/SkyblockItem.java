@@ -1,15 +1,20 @@
 package me.sophur.sofablock;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import me.sophur.sofablock.itemdata.CraftingRecipe;
+import me.sophur.sofablock.itemdata.Recipe;
+import me.sophur.sofablock.itemdata.RecipeCodec;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.util.InvalidIdentifierException;
 
 import java.io.File;
 import java.io.FileReader;
@@ -17,8 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static me.sophur.sofablock.Util.getJsonFilesInDir;
 
@@ -31,9 +35,11 @@ public class SkyblockItem {
         if (result.isSuccess()) return result.getOrThrow();
         return null;
     }
-    
+
     private String id;
     private String displayName;
+
+    private final List<Recipe> recipes = new ArrayList<>();
 
     public String getID() {
         return id;
@@ -43,9 +49,18 @@ public class SkyblockItem {
         return displayName;
     }
 
+    public List<Recipe> getRecipes() {
+        return recipes;
+    }
+
     private SkyblockItem(SkyblockItem item) {
         id = item.id;
         displayName = item.displayName;
+        recipes.addAll(item.recipes);
+    }
+
+    public static void validateItemID(String id) throws InvalidIdentifierException {
+        if (!ITEMS.containsKey(id)) throw new InvalidIdentifierException("Invalid Skyblock item ID \"" + id + "\"");
     }
 
     private static Map<String, SkyblockItem> ITEMS;
@@ -58,18 +73,30 @@ public class SkyblockItem {
     public static final Codec<SkyblockItem> INGAME_CODEC = RecordCodecBuilder.create(item -> item.group(
         Codec.STRING.fieldOf("id").forGetter(o -> o.id)
     ).apply(item, (id) -> {
+        // may use other fields for ingame items in the future
         //noinspection Convert2MethodRef
         return SkyblockItem.getItem(id);
     }));
 
     private static final Codec<SkyblockItem> REPO_CODEC = RecordCodecBuilder.create(item -> item.group(
         Codec.STRING.fieldOf("internalname").forGetter(o -> o.id.replace(':', '-')),
-        Codec.STRING.fieldOf("displayname").forGetter(o -> o.displayName)
-    ).apply(item, (id, displayName) -> {
+        Codec.STRING.fieldOf("displayname").forGetter(o -> o.displayName),
+        Codec.list(RecipeCodec.REPO_CODEC.codec()).optionalFieldOf("recipes").forGetter(o -> Optional.of(o.recipes)),
+        // why on Earth does NEU item repo do this?
+        CraftingRecipe.MAP_CODEC.codec().optionalFieldOf("recipe")
+            .forGetter(o -> {
+                for (Recipe recipe : o.recipes)
+                    if (recipe instanceof CraftingRecipe c)
+                        return Optional.of(c);
+                return Optional.empty();
+            })
+    ).apply(item, (id, displayName, optRecipes, optCraftingRecipe) -> {
         SkyblockItem i = new SkyblockItem();
         // NEU item repo uses dashes because Windows doesn't support them in file paths
         i.id = id.replace('-', ':');
         i.displayName = displayName;
+        optCraftingRecipe.ifPresent(i.recipes::add);
+        optRecipes.ifPresent(i.recipes::addAll);
         return i;
     }));
 
@@ -85,13 +112,16 @@ public class SkyblockItem {
         var jsonFiles = getJsonFilesInDir(getRepoDirectory().resolve("items"));
         ITEMS = new HashMap<>();
         for (File jsonPath : jsonFiles) {
-            DataResult<SkyblockItem> itemDataResult;
+            JsonElement json;
             try (FileReader fileReader = new FileReader(jsonPath, StandardCharsets.UTF_8)) {
-                itemDataResult = REPO_CODEC.parse(JsonOps.INSTANCE, JsonParser.parseReader(fileReader));
+                json = JsonParser.parseReader(fileReader);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            var item = itemDataResult.getOrThrow();
+            SkyblockItem item;
+            var dataResult = REPO_CODEC.parse(JsonOps.INSTANCE, json);
+            item = dataResult.getOrThrow();
+            if (ITEMS.containsKey(item.id)) throw new RuntimeException("Item " + item.id + " already exists");
             ITEMS.put(item.id, item);
         }
     }
@@ -106,4 +136,5 @@ public class SkyblockItem {
     public static SkyblockItem getItemByDisplayName(String displayName) {
         return ITEMS.values().stream().filter(i -> displayName.equals(i.displayName)).findFirst().orElse(null);
     }
+
 }

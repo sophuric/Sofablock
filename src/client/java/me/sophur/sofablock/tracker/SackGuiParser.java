@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import static me.sophur.sofablock.GemstoneUtil.GemstoneTier.*;
-import static me.sophur.sofablock.GemstoneUtil.getGemstone;
+import static me.sophur.sofablock.itemdata.Gemstone.GemstoneTier.*;
+import static me.sophur.sofablock.itemdata.Gemstone.getGemstone;
 import static me.sophur.sofablock.Util.*;
 
 public class SackGuiParser {

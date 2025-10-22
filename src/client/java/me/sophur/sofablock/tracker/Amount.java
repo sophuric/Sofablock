@@ -4,58 +4,72 @@ import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-public class AmountValue {
+public class Amount {
     public int current, spent;
 
-    public static <T extends AmountValue> Products.P2<RecordCodecBuilder.Mu<T>, Integer, Integer> fillAmountValueFields(RecordCodecBuilder.Instance<T> instance) {
+    public static <T extends Amount> Products.P2<RecordCodecBuilder.Mu<T>, Integer, Integer> fillAmountValueFields(RecordCodecBuilder.Instance<T> instance) {
         return instance.group(
             Codec.INT.fieldOf("current").forGetter(c -> c.current),
             Codec.INT.fieldOf("spent").forGetter(c -> c.spent)
         );
     }
 
-    public static Codec<AmountValue> CODEC = RecordCodecBuilder.create(instance -> fillAmountValueFields(instance).apply(instance, AmountValue::new));
+    public static Codec<Amount> CODEC = RecordCodecBuilder.create(instance -> fillAmountValueFields(instance).apply(instance, Amount::new));
 
     public transient final RateMeasurer rate;
 
-    public AmountValue() {
+    public Amount() {
         this(0, 0);
     }
 
-    public AmountValue(int current, int spent) {
+    public Amount(int current, int spent) {
         this.current = current;
         this.spent = spent;
         rate = new RateMeasurer(this::getTotal);
+    }
+
+    public Amount(Amount amount) {
+        this(amount.current, amount.spent);
     }
 
     public int getTotal() {
         return current + spent;
     }
 
-    public static class AmountGoalValue extends AmountValue {
+    public static class AmountWithGoal extends Amount {
         public int goal;
 
-        public AmountGoalValue() {
+        public AmountWithGoal() {
             this(0, 0, 0);
         }
 
-        public AmountGoalValue(int current, int spent, int goal) {
+        public AmountWithGoal(int current, int spent, int goal) {
             super(current, spent);
             this.goal = goal;
         }
 
+        public AmountWithGoal(AmountWithGoal amount) {
+            this(amount.current, amount.spent, amount.goal);
+        }
+
         // I hate Java
-        public static <T extends AmountGoalValue> Products.P3<RecordCodecBuilder.Mu<T>, Integer, Integer, Integer> fillAmountGoalValueFields(RecordCodecBuilder.Instance<T> instance) {
+        public static <T extends AmountWithGoal> Products.P3<RecordCodecBuilder.Mu<T>, Integer, Integer, Integer> fillAmountGoalValueFields(RecordCodecBuilder.Instance<T> instance) {
             return fillAmountValueFields(instance).and(
                 Codec.INT.fieldOf("goal").forGetter(c -> c.goal)
             );
         }
 
-        public static Codec<AmountGoalValue> CODEC = RecordCodecBuilder.create(instance -> fillAmountGoalValueFields(instance).apply(instance, AmountGoalValue::new));
+        public int getMissing() {
+            int total = getTotal();
+            if (total > goal) return 0;
+            return goal - total;
+        }
+
+        public static Codec<AmountWithGoal> CODEC = RecordCodecBuilder.create(instance -> fillAmountGoalValueFields(instance).apply(instance, AmountWithGoal::new));
 
     }
 
-    public static class ItemAmount extends AmountGoalValue {
+    public static class ItemAmount extends AmountWithGoal {
         public int inventory;
 
         public ItemAmount() {
@@ -70,7 +84,11 @@ public class AmountValue {
             this(current, spent, goal);
             this.inventory = inventory;
         }
-        
+
+        public ItemAmount(ItemAmount amount) {
+            this(amount.current, amount.inventory, amount.spent, amount.goal);
+        }
+
         @Override
         public int getTotal() {
             return current + inventory + spent;
