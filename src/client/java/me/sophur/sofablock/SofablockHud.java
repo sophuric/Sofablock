@@ -1,5 +1,6 @@
 package me.sophur.sofablock;
 
+import me.sophur.sofablock.hud.AmountDisplay;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer;
@@ -19,13 +20,15 @@ public class SofablockHud {
     public interface TextDisplay {
         List<Pair<Text, List<Text>>> GetTextLines();
 
-        int GetX(int width);
+        float GetX(float width, float height);
 
-        int GetY(int height);
+        float GetY(float width, float height);
+
+        float GetScale();
     }
 
     private static final List<TextDisplay> text = List.of(
-        new me.sophur.sofablock.hud.AmountDisplay()
+        new AmountDisplay()
     );
 
     public static void render(DrawContext context, RenderTickCounter tickCounter) {
@@ -43,32 +46,41 @@ public class SofablockHud {
         List<Text> hoverText = null;
 
         for (TextDisplay textDisplay : text) {
-            int x = textDisplay.GetX(window.getWidth()), y = textDisplay.GetY(window.getHeight());
-            
+            float scale = textDisplay.GetScale();
+            float wWidth = window.getWidth() / scale, wHeight = window.getHeight() / scale;
+            float x = textDisplay.GetX(wWidth, wHeight), y = textDisplay.GetY(wWidth, wHeight);
+
             int maxWidth = 0;
 
             var textLines = textDisplay.GetTextLines();
             if (textLines == null || textLines.isEmpty()) continue;
 
-            int ly = y;
+            float ly = y;
             for (Pair<Text, List<Text>> line : textLines) {
                 int width = client.textRenderer.getWidth(line.getLeft());
                 if (width > maxWidth) maxWidth = width;
 
-                if (inScreen && mouseX >= x && mouseX < x + width && mouseY >= ly && mouseY <= ly + lineHeight)
+                if (inScreen && mouseX/scale >= x && mouseX/scale < x + width && mouseY/scale >= ly && mouseY/scale <= ly + lineHeight) {
                     hoverText = line.getRight();
+                }
                 ly += lineHeight;
             }
 
+            context.getMatrices().pushMatrix();
+            context.getMatrices().scale(scale);
+
             int height = lineHeight * textLines.size();
-            TooltipBackgroundRenderer.render(context, x - 1, y - 1, maxWidth, height, null);
+            TooltipBackgroundRenderer.render(context, (int) x - 1, (int) y - 1, maxWidth, height, null);
             for (Pair<Text, List<Text>> text : textLines) {
-                context.drawTextWithShadow(client.textRenderer, text.getLeft(), x, y, 0xffffffff);
+                context.drawTextWithShadow(client.textRenderer, text.getLeft(), (int) x, (int) y, 0xffffffff);
                 y += lineHeight;
             }
+
+            context.getMatrices().popMatrix();
         }
 
-        if (hoverText != null)
+        if (hoverText != null) {
             context.drawOrderedTooltip(client.textRenderer, hoverText.stream().map(Text::asOrderedText).toList(), (int) mouseX, (int) mouseY);
+        }
     }
 }

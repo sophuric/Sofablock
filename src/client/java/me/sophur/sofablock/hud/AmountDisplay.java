@@ -97,15 +97,19 @@ public class AmountDisplay implements TextDisplay {
     }
 
     @Override
-    public int GetX(int width) {
+    public float GetX(float width, float height) {
         return 16;
     }
 
     @Override
-    public int GetY(int height) {
+    public float GetY(float width, float height) {
         return 16;
     }
-
+    
+    @Override
+    public float GetScale(){
+        return 0.5f;
+    }
 
     private static MutableText getMaxText(MutableText text, int total, int max, Formatting formatting) {
         text.append(literal(decimalFormat.format(max), formatting));
