@@ -64,52 +64,12 @@ public class ItemStorage {
         Util.writeJson(getPath().toFile(), json);
     }
 
-    public void setItemSackCount(String itemID, int count) throws NullPointerException {
-        assertValidItem(itemID);
-        var entry = items.getOrDefault(itemID, new ItemAmount());
-        entry.current = count;
-        entry.rate.updateValue();
-        items.put(itemID, entry);
-    }
-
-    public int getItemSackCount(String itemID) throws NullPointerException {
-        assertValidItem(itemID);
-        var entry = items.getOrDefault(itemID, new ItemAmount());
-        return entry.current;
-    }
-
-    public int addItemSackCount(String itemID, int count) throws NullPointerException {
-        count += getItemSackCount(itemID);
-        setItemSackCount(itemID, count);
-        return count;
-    }
-
-    public void setItemInventoryCount(String itemID, int count) throws NullPointerException {
-        assertValidItem(itemID);
-        var entry = items.getOrDefault(itemID, new ItemAmount());
-        entry.inventory = count;
-        entry.rate.updateValue();
-        items.put(itemID, entry);
-    }
-
-    public int getItemInventoryCount(String itemID) throws NullPointerException {
-        assertValidItem(itemID);
-        var entry = items.getOrDefault(itemID, new ItemAmount());
-        return entry.inventory;
-    }
-
-    public int addItemInventoryCount(String itemID, int count) throws NullPointerException {
-        count += getItemInventoryCount(itemID);
-        setItemInventoryCount(itemID, count);
-        return count;
-    }
-
     public void clearItemInventoryCounts() {
         items.keySet().forEach(key -> items.get(key).inventory = 0);
     }
 
-    public Set<String> getItemKeys() {
-        return items.keySet();
+    public List<String> getItemKeys() {
+        return items.keySet().stream().toList();
     }
 
     public ItemAmount getItemAmount(String itemID) {
@@ -117,19 +77,14 @@ public class ItemStorage {
         for (PowderType powderType : PowderType.values()) {
             if (powderType.itemRepoName.equals(itemID)) {
                 var powder = powders.get(powderType);
-                return new ItemAmount(powder.current, 0, powder.spent, powderType.hypermax);
+                return new ItemAmount(powder.current, powder.spent, powderType.hypermax, 0, 0);
             }
         }
+        assertValidItem(itemID);
         // TODO: *_CRYSTAL, SKYBLOCK_COIN, etc.
-        var item = items.get(itemID);
-        if (item != null) item = new ItemAmount(item);
+        var item = items.computeIfAbsent(itemID, k -> new ItemAmount());
+        items.put(itemID, item);
         return item;
-    }
-
-    public boolean toggleItemOpened(List<String> itemID) {
-        boolean isOpened = !getItemOpened(itemID);
-        setItemOpened(itemID, isOpened);
-        return isOpened;
     }
 
     public boolean getItemOpened(List<String> itemID) {

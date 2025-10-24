@@ -21,7 +21,7 @@ public class InventoryItemCounter {
             SkyblockItem item = SkyblockItem.getFromStack(stack);
             if (item == null) continue;
 
-            ItemStorage.INSTANCE.addItemInventoryCount(item.getID(), stack.getCount());
+            ItemStorage.INSTANCE.getItemAmount(item.getID()).addInventory(stack.getCount());
         }
     }
 }

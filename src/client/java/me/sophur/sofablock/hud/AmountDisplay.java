@@ -66,7 +66,8 @@ public class AmountDisplay implements TextDisplay {
             .append(text);
 
         addTextLine.accept(new TextLine(indentText.append(text), hoverText, a -> {
-            ItemStorage.INSTANCE.toggleItemOpened(newIDs);
+            var open = !ItemStorage.INSTANCE.getItemOpened(newIDs);
+            ItemStorage.INSTANCE.setItemOpened(newIDs, open);
         }));
 
         if (!isOpen) return;
@@ -79,7 +80,7 @@ public class AmountDisplay implements TextDisplay {
             if (previousIDs.contains(inputID)) continue;
 
             var modifiedAmount = ItemStorage.INSTANCE.getItemAmount(inputID);
-            if (modifiedAmount == null) modifiedAmount = new ItemAmount();
+            modifiedAmount = modifiedAmount == null ? new ItemAmount() : new ItemAmount(modifiedAmount);
             modifiedAmount.goal = inputAmount;
 
             var inputItem = SkyblockItem.getItem(inputID);

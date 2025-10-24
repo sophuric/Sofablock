@@ -56,20 +56,26 @@ public class SackGuiParser {
                     var flawed = matchTexts(lore, FLAWED_REGEX);
                     var fine = matchTexts(lore, FINE_REGEX);
                     if (rough != null) {
-                        ItemStorage.INSTANCE.setItemSackCount(ROUGH.getID(gemstoneID), parseAmount(rough.group(1)));
-                        ItemStorage.INSTANCE.setItemSackCount(FLAWED.getID(gemstoneID), parseAmount(flawed.group(1)));
-                        ItemStorage.INSTANCE.setItemSackCount(FINE.getID(gemstoneID), parseAmount(fine.group(1)));
+                        setItemCount(ROUGH.getID(gemstoneID), parseAmount(rough.group(1)));
+                        setItemCount(FLAWED.getID(gemstoneID), parseAmount(flawed.group(1)));
+                        setItemCount(FINE.getID(gemstoneID), parseAmount(fine.group(1)));
                     } else {
                         var specific = matchTexts(lore, SPECIFIC_GEMSTONE_REGEX);
-                        ItemStorage.INSTANCE.setItemSackCount(item.getID(), parseAmount(specific.group(1)));
+                        setItemCount(item.getID(), parseAmount(specific.group(1)));
                     }
                 } else {
                     var otherItem = matchTexts(lore, OTHER_ITEM_REGEX);
-                    ItemStorage.INSTANCE.setItemSackCount(item.getID(), parseAmount(otherItem.group(1)));
+                    setItemCount(item.getID(), parseAmount(otherItem.group(1)));
                 }
             } catch (NumberFormatException e) {
                 SofablockClient.LOGGER.error("Failed to parse item amount for {}", item.getID(), e);
             }
         }
+    }
+
+    private static void setItemCount(String itemID, int amount) {
+        var itemAmount = ItemStorage.INSTANCE.getItemAmount(itemID);
+        itemAmount.current = amount;
+        itemAmount.temp = 0;
     }
 }
