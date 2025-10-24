@@ -10,7 +10,6 @@ import me.sophur.sofablock.tracker.RateMeasurer;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -25,18 +24,18 @@ import static net.minecraft.util.Formatting.*;
 public class AmountDisplay implements TextDisplay {
     private void recurseItemRecipeTree(String id, @Nullable SkyblockItem item, ItemAmount amount, int indent, Consumer<TextLine> addTextLine, List<String> previousIDs) {
         int total = amount.getTotal();
-        
+
         MutableText indentText = literal("  ".repeat(indent), GRAY);
 
         String displayName = item == null ? "Unknown Item: " + id : item.getDisplayName();
 
-        MutableText text = getAmountText(Text.empty(), displayName, item == null ? Formatting.RED : Formatting.RESET, total, amount.goal, amount.rate);
-        List<Text> hoverText = getItemHoverText(displayName, amount);
+        MutableText text = getAmountText(Text.empty(), displayName, item == null ? Formatting.RED : Formatting.RESET, total, amount.goal, false, amount.rate);
 
         int remaining = amount.goal - total;
         var recipe = item == null ? null : item.getRecipes().stream().findFirst().orElse(null);
 
         if (remaining <= 0 || recipe == null) {
+            List<Text> hoverText = getItemHoverText(displayName, amount);
             addTextLine.accept(new TextLine(indentText.append(text), hoverText, a -> {
             }));
             return;
@@ -49,15 +48,23 @@ public class AmountDisplay implements TextDisplay {
         remaining = (remaining + count - 1) / count; // e.g. if the recipe outputs 2 items, but we need 3, we will need ceil(3/2)=2 of the output
 
         boolean isOpen = ItemStorage.INSTANCE.getItemOpened(newIDs);
-        
-        text = text.append(literal(" (" + recipe.getType().id() + " x" + remaining + ")", GRAY));
+        List<Text> hoverText = getItemHoverText(displayName, amount);
+
+        hoverText.add(Text.empty());
+        hoverText.add(Text.empty()
+            .append(literal("Recipe: ", GRAY))
+            .append(literal(recipe.getType().id(), WHITE))
+            .append(literal(" x", GRAY))
+            .append(literal("" + remaining, WHITE))
+        );
+        hoverText.add(literal("Click to " + (isOpen ? "hide" : "expand") + " recipe ingredients", GRAY));
+
         text = Text.empty()
             .append(literal("[", GRAY))
             .append(literal(isOpen ? "-" : "+", isOpen ? RED : GREEN))
             .append(literal("] ", GRAY))
             .append(text);
-        hoverText.add(Text.empty());
-        hoverText.add(literal("Click to " + (isOpen ? "hide" : "expand") + " recipe ingredients", GRAY));
+
         addTextLine.accept(new TextLine(indentText.append(text), hoverText, a -> {
             ItemStorage.INSTANCE.toggleItemOpened(newIDs);
         }));
@@ -94,7 +101,7 @@ public class AmountDisplay implements TextDisplay {
             int total = amount.getTotal();
             if (total >= powderType.hypermax) continue;
 
-            Text text = getAmountText(Text.empty(), powderType.displayName, powderType.color, total, powderType.hypermax, amount.rate);
+            Text text = getAmountText(Text.empty(), powderType.displayName, powderType.color, total, powderType.hypermax, true, amount.rate);
             List<Text> hoverText = getPowderHoverText(powderType, amount);
             textLines.add(new TextLine(text, hoverText, c -> {
             }));
@@ -110,20 +117,20 @@ public class AmountDisplay implements TextDisplay {
         return textLines;
     }
 
-    private static MutableText getMaxText(MutableText text, int total, int max, Formatting formatting) {
+    private static MutableText getMaxText(MutableText text, int total, int max, boolean percent, Formatting formatting) {
         text.append(literal(decimalFormat.format(max), formatting));
-        if (total < max)
+        if (percent && total < max)
             text.append(literal(" (", GRAY)
                 .append(literal(Long.toString((long) total * 100 / max), formatting))
                 .append(literal("%)", GRAY)));
         return text;
     }
 
-    private static MutableText getAmountText(MutableText text, String name, Formatting color, int total, int hypermax, RateMeasurer rate) {
+    private static MutableText getAmountText(MutableText text, String name, Formatting color, int total, int goal, boolean percent, RateMeasurer rate) {
         text = text.append(literal(name, color))
             .append(literal(": ", GRAY))
             .append(literal(decimalFormat.format(total), WHITE));
-        getMaxText(text.append(literal(" / ", GRAY)), total, hypermax, GRAY);
+        getMaxText(text.append(literal(" / ", GRAY)), total, goal, percent, GRAY);
         if (rate != null) {
             int gained = rate.getAmountGained();
             if (gained > 0)
@@ -150,8 +157,8 @@ public class AmountDisplay implements TextDisplay {
         List<Text> texts = getGenericHoverText(type.displayName, type.color, amount);
 
         var total = amount.getTotal();
-        texts.add(getMaxText(literal("Max for Skyblock XP: ", GRAY), total, type.xpMax, WHITE));
-        texts.add(getMaxText(literal("Hypermax: ", GRAY), total, type.hypermax, WHITE));
+        texts.add(getMaxText(literal("Max for Skyblock XP: ", GRAY), total, type.xpMax, true, WHITE));
+        texts.add(getMaxText(literal("Hypermax: ", GRAY), total, type.hypermax, true, WHITE));
         texts.add(Text.empty());
         texts.add(literal("In last minute: ", GRAY)
             .append(literal(decimalFormat.format(amount.rate.getAmountGained()), WHITE)));
@@ -163,7 +170,7 @@ public class AmountDisplay implements TextDisplay {
         List<Text> texts = getGenericHoverText(name, Formatting.RESET, amount);
 
         var total = amount.getTotal();
-        texts.add(getMaxText(literal("Progress: ", GRAY), total, amount.goal, WHITE));
+        texts.add(getMaxText(literal("Progress: ", GRAY), total, amount.goal, true, WHITE));
         texts.add(Text.empty());
         texts.add(literal("In last minute: ", GRAY)
             .append(literal(decimalFormat.format(amount.rate.getAmountGained()), WHITE)));

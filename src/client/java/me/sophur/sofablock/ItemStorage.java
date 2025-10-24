@@ -37,7 +37,7 @@ public class ItemStorage {
             .optionalFieldOf("powders", Map.of()).forGetter(c -> c.powders),
         Codec.unboundedMap(SkyblockItem.ID_CODEC, ItemAmount.CODEC)
             .optionalFieldOf("items", Map.of()).forGetter(c -> c.items),
-        Codec.list(SkyblockItem.ID_CODEC)
+        Codec.list(Codec.STRING)
             .optionalFieldOf("opened", List.of()).forGetter(c -> c.openedItems.stream().toList())
     ).apply(d, (powders, items, expandedItems) -> {
         var i = new ItemStorage();
