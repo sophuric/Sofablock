@@ -20,14 +20,20 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
+import org.joml.Vector2d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.EventListener;
 
 public class SofablockClient implements ClientModInitializer {
+    public SofablockClient() {
+    }
+
     public static final String MOD_ID = "sofablock";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
@@ -63,7 +69,7 @@ public class SofablockClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(InventoryItemCounter::handleTick);
         ClientReceiveMessageEvents.ALLOW_GAME.register(SackPickupChatParser::handleGame);
     }
-    
+
     public static Path getModDirectory() throws RuntimeException {
         var directory = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID);
         //noinspection ResultOfMethodCallIgnored
@@ -121,6 +127,14 @@ public class SofablockClient implements ClientModInitializer {
     public static boolean onSkyblock() {
         return serverType.equals("SKYBLOCK");
     }
+
+    public record ScreenClickedArgs(Vector2d mouse, int button) {
+        public ScreenClickedArgs(double mouseX, double mouseY, int button) {
+            this(new Vector2d(mouseX, mouseY), button);
+        }
+    }
+
+    public static SofablockEvent<ScreenClickedArgs> mouseClicked = new SofablockEvent<>();
 
     public static boolean shouldDrawHUD() {
         var client = MinecraftClient.getInstance();

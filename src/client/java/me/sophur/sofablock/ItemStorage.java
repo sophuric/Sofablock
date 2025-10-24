@@ -1,22 +1,17 @@
 package me.sophur.sofablock;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.sophur.sofablock.tracker.Amount;
 import me.sophur.sofablock.tracker.PowderType;
-import net.minecraft.util.Util;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static me.sophur.sofablock.Util.gson;
+import static me.sophur.sofablock.SkyblockItem.assertValidItem;
 import static me.sophur.sofablock.tracker.Amount.*;
 
 public class ItemStorage {
@@ -35,19 +30,22 @@ public class ItemStorage {
 
     private final Map<String, ItemAmount> items = new HashMap<>();
 
-    public static final Codec<ItemStorage> CODEC = RecordCodecBuilder.create(d -> d.group(
-        Codec.unboundedMap(PowderType.CODEC, Amount.CODEC).fieldOf("powders").forGetter(c -> c.powders),
-        Codec.unboundedMap(SkyblockItem.ID_CODEC, ItemAmount.CODEC).fieldOf("items").forGetter(c -> c.items)
-    ).apply(d, (powders, items) -> {
+    private final Set<String> openedItems = new HashSet<>();
+
+    private static final Codec<ItemStorage> CODEC = RecordCodecBuilder.create(d -> d.group(
+        Codec.unboundedMap(PowderType.CODEC, Amount.CODEC)
+            .optionalFieldOf("powders", Map.of()).forGetter(c -> c.powders),
+        Codec.unboundedMap(SkyblockItem.ID_CODEC, ItemAmount.CODEC)
+            .optionalFieldOf("items", Map.of()).forGetter(c -> c.items),
+        Codec.list(SkyblockItem.ID_CODEC)
+            .optionalFieldOf("opened", List.of()).forGetter(c -> c.openedItems.stream().toList())
+    ).apply(d, (powders, items, expandedItems) -> {
         var i = new ItemStorage();
         i.powders.putAll(powders);
         i.items.putAll(items);
+        i.openedItems.addAll(expandedItems);
         return i;
     }));
-
-    public static void openConfigFile() {
-        Util.getOperatingSystem().open(getPath());
-    }
 
     private static Path getPath() {
         return SofablockClient.getModDirectory().resolve("item.json");
@@ -55,28 +53,19 @@ public class ItemStorage {
 
     public static boolean load() throws IOException {
         SkyblockItem.loadItems();
-        JsonElement json;
-        try (FileReader fileReader = new FileReader(getPath().toFile(), StandardCharsets.UTF_8)) {
-            json = JsonParser.parseReader(fileReader);
-        } catch (FileNotFoundException ignored) {
-            return false;
-        }
+        JsonElement json = Util.readJson(getPath().toFile());
+        if (json == null) return false;
         INSTANCE = CODEC.parse(JsonOps.INSTANCE, json).getOrThrow();
         return true;
     }
 
     public static void save() throws IOException {
-        try (FileWriter fileWriter = new FileWriter(getPath().toFile(), StandardCharsets.UTF_8)) {
-            gson.toJson(CODEC.encodeStart(JsonOps.INSTANCE, INSTANCE).getOrThrow(), fileWriter);
-        }
-    }
-
-    private void checkValidItem(String itemID) throws NullPointerException {
-        SkyblockItem.getItem(itemID);
+        var json = CODEC.encodeStart(JsonOps.INSTANCE, INSTANCE).getOrThrow();
+        Util.writeJson(getPath().toFile(), json);
     }
 
     public void setItemSackCount(String itemID, int count) throws NullPointerException {
-        checkValidItem(itemID);
+        assertValidItem(itemID);
         var entry = items.getOrDefault(itemID, new ItemAmount());
         entry.current = count;
         entry.rate.updateValue();
@@ -84,7 +73,7 @@ public class ItemStorage {
     }
 
     public int getItemSackCount(String itemID) throws NullPointerException {
-        checkValidItem(itemID);
+        assertValidItem(itemID);
         var entry = items.getOrDefault(itemID, new ItemAmount());
         return entry.current;
     }
@@ -96,7 +85,7 @@ public class ItemStorage {
     }
 
     public void setItemInventoryCount(String itemID, int count) throws NullPointerException {
-        checkValidItem(itemID);
+        assertValidItem(itemID);
         var entry = items.getOrDefault(itemID, new ItemAmount());
         entry.inventory = count;
         entry.rate.updateValue();
@@ -104,7 +93,7 @@ public class ItemStorage {
     }
 
     public int getItemInventoryCount(String itemID) throws NullPointerException {
-        checkValidItem(itemID);
+        assertValidItem(itemID);
         var entry = items.getOrDefault(itemID, new ItemAmount());
         return entry.inventory;
     }
@@ -131,9 +120,32 @@ public class ItemStorage {
                 return new ItemAmount(powder.current, 0, powder.spent, powderType.hypermax);
             }
         }
-        // To-Do: *_CRYSTAL, SKYBLOCK_COIN, etc.
+        // TODO: *_CRYSTAL, SKYBLOCK_COIN, etc.
         var item = items.get(itemID);
         if (item != null) item = new ItemAmount(item);
         return item;
+    }
+
+    public boolean toggleItemOpened(List<String> itemID) {
+        boolean isOpened = !getItemOpened(itemID);
+        setItemOpened(itemID, isOpened);
+        return isOpened;
+    }
+
+    public boolean getItemOpened(List<String> itemID) {
+        if (itemID.isEmpty()) throw new IllegalArgumentException("Item ID list is empty");
+        itemID.forEach(SkyblockItem::assertValidItem);
+        String s = String.join(".", itemID);
+        return openedItems.contains(s);
+    }
+
+    public void setItemOpened(List<String> itemID, boolean isOpen) {
+        if (itemID.isEmpty()) throw new IllegalArgumentException("Item ID list is empty");
+        itemID.forEach(SkyblockItem::assertValidItem);
+        String s = String.join(".", itemID);
+        if (isOpen)
+            openedItems.add(s);
+        else
+            openedItems.remove(s);
     }
 }

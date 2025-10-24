@@ -3,7 +3,8 @@
     "package": "me.sophur.sofablock.mixin",
     "compatibilityLevel": "JAVA_21",
     "client": [
-        "PlayerListHudMixin"
+        "PlayerListHudMixin",
+        "ChatScreenMixin"
     ],
     "injectors": {
         "defaultRequire": 1

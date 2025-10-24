@@ -9,6 +9,7 @@ public class ModMenuIntegration implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
         return screen -> {
+            /*
             try {
                 ItemStorage.save();
             } catch (IOException e) {
@@ -16,6 +17,8 @@ public class ModMenuIntegration implements ModMenuApi {
                 return null;
             }
             ItemStorage.openConfigFile();
+             */
+            // TODO: custom config screen
             return null;
         };
     }

@@ -132,6 +132,10 @@ public class SkyblockItem {
         if (i == null) return null;
         return new SkyblockItem(i);
     }
+    
+    public static void assertValidItem(String itemID) throws AssertionError {
+        assert SkyblockItem.getItem(itemID) != null;
+    }
 
     public static SkyblockItem getItemByDisplayName(String displayName) {
         return ITEMS.values().stream().filter(i -> displayName.equals(i.displayName)).findFirst().orElse(null);

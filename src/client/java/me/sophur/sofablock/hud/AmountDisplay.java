@@ -20,38 +20,55 @@ import java.util.function.Consumer;
 import static me.sophur.sofablock.SofablockHud.*;
 import static me.sophur.sofablock.Util.*;
 import static me.sophur.sofablock.tracker.Amount.*;
-import static net.minecraft.util.Formatting.GRAY;
-import static net.minecraft.util.Formatting.WHITE;
+import static net.minecraft.util.Formatting.*;
 
 public class AmountDisplay implements TextDisplay {
-    private void recurseItemRecipeTree(String id, @Nullable SkyblockItem item, ItemAmount amount, int indent, Consumer<Pair<Text, List<Text>>> addTextLine, List<String> previousIDs) {
+    private void recurseItemRecipeTree(String id, @Nullable SkyblockItem item, ItemAmount amount, int indent, Consumer<TextLine> addTextLine, List<String> previousIDs) {
         int total = amount.getTotal();
-
-        MutableText text = Text.empty().append(literal("  ".repeat(indent), GRAY));
+        
+        MutableText indentText = literal("  ".repeat(indent), GRAY);
 
         String displayName = item == null ? "Unknown Item: " + id : item.getDisplayName();
 
-        text = getAmountText(text, displayName, item == null ? Formatting.RED : Formatting.RESET, total, amount.goal, amount.rate);
+        MutableText text = getAmountText(Text.empty(), displayName, item == null ? Formatting.RED : Formatting.RESET, total, amount.goal, amount.rate);
         List<Text> hoverText = getItemHoverText(displayName, amount);
 
         int remaining = amount.goal - total;
         var recipe = item == null ? null : item.getRecipes().stream().findFirst().orElse(null);
 
         if (remaining <= 0 || recipe == null) {
-            addTextLine.accept(new Pair<>(text, hoverText));
+            addTextLine.accept(new TextLine(indentText.append(text), hoverText, a -> {
+            }));
             return;
         }
+
+        var newIDs = new ArrayList<>(previousIDs);
+        newIDs.add(item.getID());
 
         int count = recipe.getCount();
         remaining = (remaining + count - 1) / count; // e.g. if the recipe outputs 2 items, but we need 3, we will need ceil(3/2)=2 of the output
 
+        boolean isOpen = ItemStorage.INSTANCE.getItemOpened(newIDs);
+        
         text = text.append(literal(" (" + recipe.getType().id() + " x" + remaining + ")", GRAY));
-        addTextLine.accept(new Pair<>(text, hoverText));
+        text = Text.empty()
+            .append(literal("[", GRAY))
+            .append(literal(isOpen ? "-" : "+", isOpen ? RED : GREEN))
+            .append(literal("] ", GRAY))
+            .append(text);
+        hoverText.add(Text.empty());
+        hoverText.add(literal("Click to " + (isOpen ? "hide" : "expand") + " recipe ingredients", GRAY));
+        addTextLine.accept(new TextLine(indentText.append(text), hoverText, a -> {
+            ItemStorage.INSTANCE.toggleItemOpened(newIDs);
+        }));
+
+        if (!isOpen) return;
 
         for (Stack stack : recipe.getCommonInputs()) {
             var inputAmount = stack.getAmount() * remaining;
             var inputID = stack.getID();
 
+            // keep track of previous item IDs to prevent circular dependencies
             if (previousIDs.contains(inputID)) continue;
 
             var modifiedAmount = ItemStorage.INSTANCE.getItemAmount(inputID);
@@ -60,18 +77,14 @@ public class AmountDisplay implements TextDisplay {
 
             var inputItem = SkyblockItem.getItem(inputID);
 
-            // keep track of previous item IDs to prevent circular dependencies
-            var newIDs = new ArrayList<>(previousIDs);
-            newIDs.add(id);
-
             recurseItemRecipeTree(inputID, inputItem, modifiedAmount, indent + 1, addTextLine, newIDs);
         }
     }
 
-    public List<Pair<Text, List<Text>>> GetTextLines() {
+    public List<TextLine> GetTextLines() {
         if (!SofablockClient.onSkyblock()) return null;
 
-        ArrayList<Pair<Text, List<Text>>> textLines = new ArrayList<>();
+        ArrayList<TextLine> textLines = new ArrayList<>();
 
         for (PowderType powderType : PowderType.values()) {
             Amount amount = ItemStorage.INSTANCE.powders.get(powderType);
@@ -83,7 +96,8 @@ public class AmountDisplay implements TextDisplay {
 
             Text text = getAmountText(Text.empty(), powderType.displayName, powderType.color, total, powderType.hypermax, amount.rate);
             List<Text> hoverText = getPowderHoverText(powderType, amount);
-            textLines.add(new Pair<>(text, hoverText));
+            textLines.add(new TextLine(text, hoverText, c -> {
+            }));
         }
 
         for (String itemID : ItemStorage.INSTANCE.getItemKeys()) {
@@ -94,21 +108,6 @@ public class AmountDisplay implements TextDisplay {
         }
 
         return textLines;
-    }
-
-    @Override
-    public float GetX(float width, float height) {
-        return 16;
-    }
-
-    @Override
-    public float GetY(float width, float height) {
-        return 16;
-    }
-    
-    @Override
-    public float GetScale(){
-        return 0.5f;
     }
 
     private static MutableText getMaxText(MutableText text, int total, int max, Formatting formatting) {

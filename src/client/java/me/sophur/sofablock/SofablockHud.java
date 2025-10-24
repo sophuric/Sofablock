@@ -7,33 +7,44 @@ import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.Window;
 import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
+import org.joml.Vector2d;
+import org.joml.Vector2dc;
+import org.lwjgl.glfw.GLFWMouseButtonCallback;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class SofablockHud {
     private SofablockHud() {
     }
 
-    private final static SofablockHud INSTANCE = new SofablockHud();
+    public record TextLine(Text text, List<Text> hoverText, Consumer<Vector2d> click) {
+        // TODO: rework this so it can display items, and text in tables and custom layouts, instead of just a list
+    }
 
     public interface TextDisplay {
-        List<Pair<Text, List<Text>>> GetTextLines();
-
-        float GetX(float width, float height);
-
-        float GetY(float width, float height);
-
-        float GetScale();
+        List<TextLine> GetTextLines();
     }
 
     private static final List<TextDisplay> text = List.of(
         new AmountDisplay()
     );
 
+    private static boolean clicked = false;
+
+    static {
+        SofablockClient.mouseClicked.add(a -> {
+            if (!SofablockClient.shouldDrawHUD()) return;
+            if (a.button() == 0) clicked = true;
+        });
+    }
+
     public static void render(DrawContext context, RenderTickCounter tickCounter) {
         // only show without a screen or in chat
-        if (!SofablockClient.shouldDrawHUD()) return;
+        if (!SofablockClient.shouldDrawHUD()) {
+            clicked = false;
+            return;
+        }
 
         var client = MinecraftClient.getInstance();
         boolean inScreen = client.currentScreen != null;
@@ -41,46 +52,58 @@ public class SofablockHud {
         int lineHeight = client.textRenderer.fontHeight;
 
         Window window = client.getWindow();
-        double mouseX = client.mouse.getScaledX(window), mouseY = client.mouse.getScaledY(window);
+        Vector2dc mouse = new Vector2d(client.mouse.getScaledX(window), client.mouse.getScaledY(window));
 
-        List<Text> hoverText = null;
+        TextLine hoverLine = null;
+        Vector2dc hoverLinePos = null;
 
         for (TextDisplay textDisplay : text) {
-            float scale = textDisplay.GetScale();
-            float wWidth = window.getWidth() / scale, wHeight = window.getHeight() / scale;
-            float x = textDisplay.GetX(wWidth, wHeight), y = textDisplay.GetY(wWidth, wHeight);
+            float scale = 1;
+            // TODO: custom HUD positioning
+            // float wWidth = window.getWidth() / scale, wHeight = window.getHeight() / scale;
+            Vector2d pos = new Vector2d(16, 16);
 
             int maxWidth = 0;
 
             var textLines = textDisplay.GetTextLines();
             if (textLines == null || textLines.isEmpty()) continue;
 
-            float ly = y;
-            for (Pair<Text, List<Text>> line : textLines) {
-                int width = client.textRenderer.getWidth(line.getLeft());
+            Vector2d linePos = new Vector2d(pos);
+            for (TextLine line : textLines) {
+                int width = client.textRenderer.getWidth(line.text);
                 if (width > maxWidth) maxWidth = width;
 
-                if (inScreen && mouseX/scale >= x && mouseX/scale < x + width && mouseY/scale >= ly && mouseY/scale <= ly + lineHeight) {
-                    hoverText = line.getRight();
+                if (inScreen && mouse.x() / scale >= linePos.x && mouse.x() / scale < linePos.x + width && mouse.y() / scale >= linePos.y && mouse.y() / scale <= linePos.y + lineHeight) {
+                    hoverLine = line;
+                    hoverLinePos = linePos;
                 }
-                ly += lineHeight;
+                linePos.y += lineHeight;
             }
 
             context.getMatrices().pushMatrix();
             context.getMatrices().scale(scale);
 
             int height = lineHeight * textLines.size();
-            TooltipBackgroundRenderer.render(context, (int) x - 1, (int) y - 1, maxWidth, height, null);
-            for (Pair<Text, List<Text>> text : textLines) {
-                context.drawTextWithShadow(client.textRenderer, text.getLeft(), (int) x, (int) y, 0xffffffff);
-                y += lineHeight;
+            TooltipBackgroundRenderer.render(context, (int) pos.x() - 1, (int) pos.y() - 1, maxWidth, height, null);
+            for (TextLine line : textLines) {
+                context.drawTextWithShadow(client.textRenderer, line.text, (int) pos.x(), (int) pos.y(), 0xffffffff);
+                pos.y += lineHeight;
             }
 
             context.getMatrices().popMatrix();
         }
 
-        if (hoverText != null) {
-            context.drawOrderedTooltip(client.textRenderer, hoverText.stream().map(Text::asOrderedText).toList(), (int) mouseX, (int) mouseY);
+        if (hoverLine != null) {
+            context.drawOrderedTooltip(client.textRenderer, hoverLine.hoverText
+                .stream().map(Text::asOrderedText).toList(), (int) mouse.x(), (int) mouse.y());
+
+            Vector2d relativePos = mouse.sub(hoverLinePos, new Vector2d());
+
+            if (clicked) {
+                hoverLine.click.accept(relativePos);
+            }
         }
+
+        clicked = false;
     }
 }
