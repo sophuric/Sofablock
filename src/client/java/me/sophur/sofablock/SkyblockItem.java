@@ -14,6 +14,8 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.InvalidIdentifierException;
 
 import java.io.File;
@@ -132,13 +134,15 @@ public class SkyblockItem {
         if (i == null) return null;
         return new SkyblockItem(i);
     }
-    
+
     public static void assertValidItem(String itemID) throws AssertionError {
         assert SkyblockItem.getItem(itemID) != null;
     }
 
     public static SkyblockItem getItemByDisplayName(String displayName) {
-        return ITEMS.values().stream().filter(i -> displayName.equals(i.displayName)).findFirst().orElse(null);
+        return ITEMS.values().stream().filter(i ->
+            displayName.equals(i.displayName) || displayName.equals(Formatting.strip(i.displayName))
+        ).findFirst().orElse(null);
     }
 
 }
