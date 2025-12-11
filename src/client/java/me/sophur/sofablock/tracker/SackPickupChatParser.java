@@ -15,9 +15,9 @@ import static me.sophur.sofablock.Util.NUMBER_REGEX;
 import static me.sophur.sofablock.Util.parseAmount;
 
 public class SackPickupChatParser {
-    private static final Pattern SACK_REGEX = Pattern.compile("^\\[Sacks] \\+" + NUMBER_REGEX + " items\\. \\(Last " + NUMBER_REGEX + "s\\.\\)$");
+    private static final Pattern SACK_REGEX = Pattern.compile("^\\[Sacks] [+-]" + NUMBER_REGEX + " items?(?:, [+-]" + NUMBER_REGEX + " items?)?\\. \\(Last " + NUMBER_REGEX + "s\\.\\)$");
     private static final Pattern PRISTINE_REGEX = Pattern.compile("^PRISTINE! You found (.*) x(" + NUMBER_REGEX + ")!$");
-    private static final Pattern ITEM_REGEX = Pattern.compile("^ {2}\\+(" + NUMBER_REGEX + ") (.*) \\(.*\\)$");
+    private static final Pattern ITEM_REGEX = Pattern.compile("^ {2}([+-]" + NUMBER_REGEX + ") (.*) \\(.*\\)$");
 
     private SackPickupChatParser() {
     }
@@ -29,43 +29,44 @@ public class SackPickupChatParser {
 
         // find message like "[Sacks] +2,591 items. (Last 11s.)"
         if (SACK_REGEX.matcher(textString).matches()) {
-            var hoverOpt = text.getSiblings().stream().filter(t -> t.getStyle().getHoverEvent() != null).findFirst();
-            if (hoverOpt.isEmpty()) return true;
+            var hoverOpts = text.getSiblings().stream().filter(t -> t.getStyle().getHoverEvent() != null)
+                    .filter(t ->t.getString().contains("item") ); // one text has the amount, one text says " items" or " item", both have hover text
+            hoverOpts.forEach(hoverOpt -> {
+                // get hover text from message
+                HoverEvent hover = hoverOpt.getStyle().getHoverEvent();
+                if (hover == null) return; // shouldn't happen
+                if (!(hover instanceof HoverEvent.ShowText(Text hoverText))) return;
 
-            // get hover text from message
-            HoverEvent hover = hoverOpt.get().getStyle().getHoverEvent();
-            if (hover == null) return true; // shouldn't happen
-            if (!(hover instanceof HoverEvent.ShowText(Text hoverText))) return true;
+                // split lines in hover text
+                String[] lines = Util.NEWLINE.split(hoverText.getString());
+                // loop items
+                for (String line : lines) {
+                    // find line like "  +113 Mithril (Mining Sack)"
+                    Matcher match = ITEM_REGEX.matcher(line);
+                    if (!match.matches()) continue;
 
-            // split lines in hover text
-            String[] lines = Util.NEWLINE.split(hoverText.getString());
-            // loop items
-            for (String line : lines) {
-                // find line like "  +113 Mithril (Mining Sack)"
-                Matcher match = ITEM_REGEX.matcher(line);
-                if (!match.matches()) continue;
+                    String amountString = match.group(1);
+                    int amount;
+                    try {
+                        amount = parseAmount(amountString);
+                    } catch (NumberFormatException e) {
+                        LOGGER.error("Failed to parse sack item pickup amount: {}", amountString, e);
+                        continue;
+                    }
 
-                String amountString = match.group(1);
-                int amount;
-                try {
-                    amount = parseAmount(amountString);
-                } catch (NumberFormatException e) {
-                    LOGGER.error("Failed to parse sack item pickup amount: {}", amountString, e);
-                    continue;
+                    String itemDisplayName = match.group(2);
+                    var item = SkyblockItem.getItemByDisplayName(itemDisplayName);
+                    if (item == null) {
+                        LOGGER.error("Failed to get item by display name: {}", itemDisplayName);
+                        continue;
+                    }
+
+                    var itemAmount = ItemStorage.INSTANCE.getItemAmount(item.getID());
+                    itemAmount.temp = 0;
+                    itemAmount.addCurrent(amount);
                 }
-
-                String itemDisplayName = match.group(2);
-                var item = SkyblockItem.getItemByDisplayName(itemDisplayName);
-                if (item == null) {
-                    LOGGER.error("Failed to get item by display name: {}", itemDisplayName);
-                    continue;
-                }
-
-                var itemAmount = ItemStorage.INSTANCE.getItemAmount(item.getID());
-                itemAmount.temp = 0;
-                itemAmount.addCurrent(amount);
-                return true;
-            }
+            });
+            return true;
         } else {
             // instead find message like "PRISTINE! You found ✎ Flawed Sapphire Gemstone x38!"
             Matcher match = PRISTINE_REGEX.matcher(textString);
